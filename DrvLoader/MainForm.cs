@@ -17,24 +17,6 @@ namespace DrvLoader
 {
     public partial class MainForm : Form
     {
-        //[DllImport("dllSrvRunner.dll", EntryPoint = "OpenSCM", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, SetLastError = true)]
-        //private extern static void OpenSCM();
-
-        //[DllImport("dllSrvRunner.dll", EntryPoint = "Create", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, SetLastError = true)]
-        //private extern static void Create(string drvPath, string srvName);
-
-        //[DllImport("dllSrvRunner.dll", EntryPoint = "Start", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, SetLastError = true)]
-        //private extern static void Start(string srvName);
-
-        //[DllImport("dllSrvRunner.dll", EntryPoint = "Stop", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, SetLastError = true)]
-        //private extern static void Stop(string srvName);
-
-        //[DllImport("dllSrvRunner.dll", EntryPoint = "Delete", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, SetLastError = true)]
-        //private extern static void Delete(string srvName);
-
-        //[DllImport("dllSrvRunner.dll", EntryPoint = "End", CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Unicode, SetLastError = true)]
-        //private extern static void End();
-
         string drvPath, srvName;
 
         public MainForm(string[] args)
@@ -61,7 +43,15 @@ namespace DrvLoader
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
             txtLog.AppendText("正在结束程序……");
-            SrvRunner.End();
+            try
+            {
+                SrvRunner.End();
+            }
+            catch (System.Exception ex)
+            {
+                MessageBox.Show(ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtLog.AppendText(ex.Message);
+            }
         }
 
         private void MainForm_DragEnter(object sender, DragEventArgs e)
@@ -124,7 +114,8 @@ namespace DrvLoader
             }
             catch (System.Exception ex)
             {
-                txtLog.AppendText("安装失败。原因：" + ex.Message + "\r\n");
+                MessageBox.Show(ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtLog.AppendText(ex.Message + "安装已取消。\r\n");
             }
         }
 
@@ -132,13 +123,14 @@ namespace DrvLoader
         {
             try
             {
-                txtLog.AppendText("正在启动服务……\r\n");
+                txtLog.AppendText(string.Format("正在启动服务 {0} ……\r\n", srvName));
                 SrvRunner.Start(srvName);
-                txtLog.AppendText(string.Format("服务{0}已启动。\r\n", srvName));
+                txtLog.AppendText(string.Format("服务 {0} 已启动。\r\n", srvName));
             }
             catch (System.Exception ex)
             {
                 MessageBox.Show(ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtLog.AppendText(ex.Message);
             }
         }
 
@@ -146,14 +138,14 @@ namespace DrvLoader
         {
             try
             {
+                txtLog.AppendText(string.Format("正在停止服务 {0} ……\r\n", srvName));
                 SrvRunner.Stop(srvName);
-                MessageBox.Show("服务停止。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                btnStart.Enabled = btnDel.Enabled = true;
-                btnStop.Enabled = false;
+                txtLog.AppendText(string.Format("服务 {0} 已停止。\r\n", srvName));
             }
             catch (System.Exception ex)
             {
                 MessageBox.Show(ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtLog.AppendText(ex.Message);
             }
         }
 
@@ -161,14 +153,14 @@ namespace DrvLoader
         {
             try
             {
+                txtLog.AppendText(string.Format("正在删除服务 {0} ……\r\n", srvName));
                 SrvRunner.Delete(srvName);
-                MessageBox.Show("卸载成功。", "提示", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                btnStart.Enabled = btnStop.Enabled = btnDel.Enabled = false;
-                btnBrow.Enabled = btnInst.Enabled = txtSrvName.Enabled = true;
+                txtLog.AppendText(string.Format("服务 {0} 已删除。\r\n", srvName));
             }
             catch (System.Exception ex)
             {
                 MessageBox.Show(ex.Message, "错误", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                txtLog.AppendText(ex.Message);
             }
 
         }

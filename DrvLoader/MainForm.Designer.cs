@@ -76,6 +76,7 @@
             // 
             this.btnInst.AutoSize = true;
             this.btnInst.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+            this.btnInst.Enabled = false;
             this.btnInst.Font = new System.Drawing.Font("Microsoft YaHei UI", 10.5F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(134)));
             this.btnInst.Location = new System.Drawing.Point(293, 3);
             this.btnInst.Name = "btnInst";

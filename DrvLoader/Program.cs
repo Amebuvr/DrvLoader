@@ -17,7 +17,8 @@ namespace DrvLoader
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm(args));
+            MainForm mainForm = new MainForm(args);
+            Application.Run(mainForm);
         }
     }
 }
