@@ -17,6 +17,7 @@ void SrvRunnerCLR::SrvRunner::Create(String^ drvPath, String^ srvName)
 {
     pin_ptr<const WCHAR> path = PtrToStringChars(drvPath);
     pin_ptr<const WCHAR> name = PtrToStringChars(srvName);
+
     STATUS& ret = dllSrvRunner::dllCreate((WCHAR*)path, (WCHAR*)name);
     if (!ret.Success)
     {
@@ -54,9 +55,9 @@ void SrvRunnerCLR::SrvRunner::Delete(String^ srvName)
     }
 }
 
-void SrvRunnerCLR::SrvRunner::End()
+void SrvRunnerCLR::SrvRunner::CLear()
 {
-    STATUS& ret = dllSrvRunner::dllEnd();
+    STATUS& ret = dllSrvRunner::dllClear();
     if (!ret.Success)
     {
         ThrowToCS(ret.Msg);

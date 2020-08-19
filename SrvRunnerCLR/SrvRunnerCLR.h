@@ -15,6 +15,6 @@ namespace SrvRunnerCLR {
         static void Start(String^ srvName);
         static void Stop(String^ srvName);
         static void Delete(String^ srvName);
-        static void End();
+        static void CLear();
     };
 }

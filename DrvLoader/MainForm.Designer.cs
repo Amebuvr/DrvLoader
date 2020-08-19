@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.lblDrvPath = new System.Windows.Forms.Label();
             this.btnBrow = new System.Windows.Forms.Button();
             this.btnInst = new System.Windows.Forms.Button();
@@ -160,7 +161,7 @@
             this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tlpMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tlpMain.Size = new System.Drawing.Size(570, 277);
+            this.tlpMain.Size = new System.Drawing.Size(570, 360);
             this.tlpMain.TabIndex = 10;
             // 
             // pnlDrv
@@ -205,7 +206,7 @@
             this.pnlLog.Controls.Add(this.txtLog);
             this.pnlLog.Location = new System.Drawing.Point(3, 85);
             this.pnlLog.Name = "pnlLog";
-            this.pnlLog.Size = new System.Drawing.Size(502, 142);
+            this.pnlLog.Size = new System.Drawing.Size(502, 221);
             this.pnlLog.TabIndex = 2;
             // 
             // txtLog
@@ -218,7 +219,7 @@
             this.txtLog.Name = "txtLog";
             this.txtLog.ReadOnly = true;
             this.txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtLog.Size = new System.Drawing.Size(496, 136);
+            this.txtLog.Size = new System.Drawing.Size(496, 215);
             this.txtLog.TabIndex = 9;
             // 
             // MainForm
@@ -228,9 +229,10 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
-            this.ClientSize = new System.Drawing.Size(570, 277);
+            this.ClientSize = new System.Drawing.Size(570, 360);
             this.Controls.Add(this.tlpMain);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.Name = "MainForm";
             this.Text = "DrvLoader";

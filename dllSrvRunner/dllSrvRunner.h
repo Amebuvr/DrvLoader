@@ -1,9 +1,9 @@
 #pragma once
+#pragma warning(disable:4251)
 #include "windows.h"
 #include "stdio.h"
 #include "string.h"
 #include "unordered_map"
-#include "typeinfo"
 
 #ifdef DLLSRVRUNNER_EXPORTS
 #define DLLSRVRUNNER_API _declspec(dllexport)    
@@ -24,13 +24,22 @@ extern "C" class DLLSRVRUNNER_API dllSrvRunner
 {
 public:
     static STATUS dllOpenSCM();
-    static STATUS dllLookup(WCHAR* srvName);
-    static STATUS dllCreate(WCHAR* drvPath, WCHAR* srvName);
-    static STATUS dllStart(WCHAR* srvName);
-    static STATUS dllStop(WCHAR* srvName);
-    static STATUS dllDelete(WCHAR* srvName);
-    static STATUS dllEnd();
+    static STATUS dllLookup(PWSTR srvName);
+    static STATUS dllCreate(PWSTR drvPath, PWSTR srvName);
+    static STATUS dllStart(PWSTR srvName);
+    static STATUS dllStop(PWSTR srvName);
+    static STATUS dllDelete(PWSTR srvName);
+    static STATUS dllClear();
 
 private:
-    static SC_HANDLE dllOpenSrv(WCHAR* srvName);
+    static STATUS   dllOpenSrv(SC_HANDLE& phService, PWSTR srvName);
+    static VOID     dllDelHandle(SC_HANDLE& hService);
+
+    static SC_HANDLE                                        hSCManager;
+    static std::unordered_map<PWSTR, SC_HANDLE>            hSrvMap;
+    static std::unordered_map<PWSTR, SC_HANDLE>::iterator  srvIter;
+    static std::unordered_map<DWORD, PCWSTR>                expected_err;
+    static std::unordered_map<DWORD, PCWSTR>::iterator      errIter;
+
+    friend inline void AppendErrInf(PWSTR msg, DWORD errCode, PWSTR end);
 };

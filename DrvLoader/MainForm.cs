@@ -42,10 +42,24 @@ namespace DrvLoader
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+            DialogResult dialogResult =
+                MessageBox.Show(
+                    "是否卸载已安装的驱动？",
+                    "提示",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+            if (dialogResult == DialogResult.Cancel)
+            {
+                e.Cancel = true;
+                return;
+            }
             txtLog.AppendText("正在结束程序……");
             try
             {
-                SrvRunner.End();
+                if (dialogResult == DialogResult.Yes)
+                {
+                    SrvRunner.CLear();
+                }
             }
             catch (System.Exception ex)
             {
