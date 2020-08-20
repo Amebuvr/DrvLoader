@@ -12,9 +12,10 @@ namespace SrvRunnerCLR {
     public:
         static void OpenSCM();
         static void Create(String^ drvPath, String^ srvName);
+        static void Lookup(String^ srvName);
         static void Start(String^ srvName);
         static void Stop(String^ srvName);
-        static void Delete(String^ srvName);
+        static void Delete(String^ srvName, bool force);
         static void CLear();
     };
 }

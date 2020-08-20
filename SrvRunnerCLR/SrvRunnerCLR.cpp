@@ -2,7 +2,8 @@
 
 #include "SrvRunnerCLR.h"
 
-#define ThrowToCS(msg) throw gcnew System::Exception(gcnew System::String(msg))
+#define ThrowToCS(msg)  throw gcnew System::SystemException(gcnew System::String(msg))
+#define MsgToCS(msg)    throw gcnew System::ApplicationException(gcnew System::String(msg))
 
 void SrvRunnerCLR::SrvRunner::OpenSCM()
 {
@@ -22,6 +23,20 @@ void SrvRunnerCLR::SrvRunner::Create(String^ drvPath, String^ srvName)
     if (!ret.Success)
     {
         ThrowToCS(ret.Msg);
+    }
+}
+
+void SrvRunnerCLR::SrvRunner::Lookup(String^ srvName)
+{
+    pin_ptr<const WCHAR> name = PtrToStringChars(srvName);
+    STATUS& ret = dllSrvRunner::dllLookup((WCHAR*)name);
+    if (!ret.Success)
+    {
+        ThrowToCS(ret.Msg);
+    }
+    else
+    {
+        MsgToCS(ret.Msg);
     }
 }
 
@@ -45,10 +60,10 @@ void SrvRunnerCLR::SrvRunner::Stop(String^ srvName)
     }
 }
 
-void SrvRunnerCLR::SrvRunner::Delete(String^ srvName)
+void SrvRunnerCLR::SrvRunner::Delete(String^ srvName, bool force)
 {
     pin_ptr<const WCHAR> name = PtrToStringChars(srvName);
-    STATUS& ret = dllSrvRunner::dllDelete((WCHAR*)name);
+    STATUS& ret = dllSrvRunner::dllDelete((WCHAR*)name, force ? TRUE : FALSE);
     if (!ret.Success)
     {
         ThrowToCS(ret.Msg);
