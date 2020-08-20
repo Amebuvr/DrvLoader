@@ -38,9 +38,9 @@ namespace DrvLoader
                 DisplayException(ex);
             }
 
-            ActiveControl = txtSrvName;
-
             InitializeComponent();
+
+            ActiveControl = txtSrvName;
 
             txtLog.AppendText("欢迎使用DrvLoader");
             drvPath = "";
