@@ -421,7 +421,7 @@ STATUS dllSrvRunner::dllLookup(PWSTR srvName)
         pSrvConf->lpServiceStartName,
         pSrvConf->lpLoadOrderGroup == NULL ? L"" : pSrvConf->lpLoadOrderGroup,
         pSrvConf->dwTagId,
-        pSrvConf->dwTagId == 0 ? " (N/A)" : "",
+        pSrvConf->lpLoadOrderGroup == NULL ? " (N/A)" : "",
         pSrvConf->lpDependencies == NULL ? L"" : pSrvConf->lpDependencies);
 
     return STATUS(SUCCESS, srvConf);
