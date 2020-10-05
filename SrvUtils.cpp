@@ -1,7 +1,8 @@
-#include "pch.h"
-#include "dllSrvRunner.h"
+#include "SrvUtils.h"
 
-std::unordered_map<DWORD, PCWSTR> dllSrvRunner::expected_err = {
+using namespace DrvLoaderCLR;
+
+std::unordered_map<DWORD, PCWSTR>               SrvUtils::expected_err = {
 {ERROR_PATH_NOT_FOUND,            TEXT("找不到服务二进制文件。")},
 {ERROR_ACCESS_DENIED,             TEXT("拒绝访问。")},
 {ERROR_INVALID_NAME,              TEXT("指定的服务名无效。")},
@@ -13,11 +14,11 @@ std::unordered_map<DWORD, PCWSTR> dllSrvRunner::expected_err = {
 {ERROR_SERVICE_NOT_ACTIVE,        TEXT("服务尚未启动。")},
 {ERROR_SERVICE_MARKED_FOR_DELETE, TEXT("服务已标记为删除。")},
 {ERROR_NO_MSG,                    TEXT("")} };
-std::unordered_map<DWORD, PCWSTR>::iterator dllSrvRunner::errIter;
-std::unordered_map<PWSTR, SC_HANDLE> dllSrvRunner::hSrvMap;
-std::unordered_map<PWSTR, SC_HANDLE>::iterator dllSrvRunner::srvIter;
+std::unordered_map<DWORD, PCWSTR>::iterator     SrvUtils::errIter;
+std::unordered_map<PWSTR, SC_HANDLE>            SrvUtils::hSrvMap;
+std::unordered_map<PWSTR, SC_HANDLE>::iterator  SrvUtils::srvIter;
 
-SC_HANDLE dllSrvRunner::hSCManager;
+SC_HANDLE SrvUtils::hSCManager;
 
 #pragma region wcsapp
 
@@ -54,41 +55,41 @@ inline void wcsapp(WCHAR(&_Destination)[__Size], PWSTR _Source)
 }
 
 template<typename...R>
-inline void wcsapp(PWSTR(&_Destination), rsize_t _SizeInWords, PCWSTR _Source, R..._res)
+inline void wcsapp(PWSTR(&_Destination), size_t _SizeInWords, PCWSTR _Source, R..._res)
 {
     wcscat_s(_Destination, _SizeInWords, _Source);
     wcsapp(_Destination, _SizeInWords - wcslen(_Source), _res...);
 }
 
 template<typename...R>
-inline void wcsapp(PWSTR(&_Destination), rsize_t _SizeInWords, PWSTR _Source, R..._res)
+inline void wcsapp(PWSTR(&_Destination), size_t _SizeInWords, PWSTR _Source, R..._res)
 {
     wcscat_s(_Destination, _SizeInWords, _Source);
     wcsapp(_Destination, _SizeInWords - wcslen(_Source), _res...);
 }
 
 template<>
-inline void wcsapp(PWSTR(&_Destination), rsize_t _SizeInWords, PCWSTR _Source)
+inline void wcsapp(PWSTR(&_Destination), size_t _SizeInWords, PCWSTR _Source)
 {
     wcscat_s(_Destination, _SizeInWords, _Source);
 }
 
 template<>
-inline void wcsapp(PWSTR(&_Destination), rsize_t _SizeInWords, PWSTR _Source)
+inline void wcsapp(PWSTR(&_Destination), size_t _SizeInWords, PWSTR _Source)
 {
     wcscat_s(_Destination, _SizeInWords, _Source);
 }
 
 #pragma endregion
 
-inline void AppendErrInf(PWSTR msg, DWORD errCode, PWSTR end = TEXT("\r\n"))
+inline void DrvLoaderCLR::AppendErrInfo(PWSTR msg, DWORD errCode, PWSTR end = TEXT("\r\n"))
 {
-    dllSrvRunner::errIter = dllSrvRunner::expected_err.find(errCode);
-    if (dllSrvRunner::errIter != dllSrvRunner::expected_err.end())
+    SrvUtils::errIter = SrvUtils::expected_err.find(errCode);
+    if (SrvUtils::errIter != SrvUtils::expected_err.end())
     {
-        if (dllSrvRunner::errIter->first != ERROR_NO_MSG)
+        if (SrvUtils::errIter->first != ERROR_NO_MSG)
         {
-            wcsapp(msg, MSG_BUF_SIZE, dllSrvRunner::errIter->second, end);
+            wcsapp(msg, MSG_BUF_SIZE, SrvUtils::errIter->second, end);
         }
     }
     else
@@ -97,9 +98,9 @@ inline void AppendErrInf(PWSTR msg, DWORD errCode, PWSTR end = TEXT("\r\n"))
     }
 }
 
-STATUS::STATUS(DWORD exitCode, PCWSTR msg)
+STATUS::STATUS(DWORD exitCode, OPTIONAL PCWSTR msg = TEXT(""))
 {
-    wcsapp(this->Msg, msg);
+    wcscpy_s(this->Msg, msg);
     if (exitCode == SUCCESS)
     {
         this->Success = TRUE;
@@ -107,11 +108,11 @@ STATUS::STATUS(DWORD exitCode, PCWSTR msg)
     else
     {
         this->Success = FALSE;
-        AppendErrInf(this->Msg, exitCode);
+        AppendErrInfo(this->Msg, exitCode);
     }
 }
 
-STATUS dllSrvRunner::dllOpenSrv(SC_HANDLE& hService, PWSTR srvName)
+STATUS SrvUtils::OpenSrv(SC_HANDLE& hService, PWSTR srvName, OPTIONAL ULONG Access = SERVICE_ALL_ACCESS)
 {
     srvIter = hSrvMap.find(srvName);
     if (srvIter != hSrvMap.end())
@@ -119,7 +120,7 @@ STATUS dllSrvRunner::dllOpenSrv(SC_HANDLE& hService, PWSTR srvName)
         hService = srvIter->second;
         return STATUS(SUCCESS);
     }
-    hService = OpenService(hSCManager, srvName, SERVICE_ALL_ACCESS);
+    hService = OpenService(hSCManager, srvName, Access);
     if (hService == NULL)
     {
         return STATUS(GetLastError(), TEXT("打开服务失败，"));
@@ -127,7 +128,7 @@ STATUS dllSrvRunner::dllOpenSrv(SC_HANDLE& hService, PWSTR srvName)
     return STATUS(SUCCESS);
 }
 
-VOID dllSrvRunner::dllDelHandle(SC_HANDLE& hService)
+VOID SrvUtils::DelHandle(SC_HANDLE& hService)
 {
     for (srvIter = hSrvMap.begin(); srvIter != hSrvMap.end(); srvIter++)
     {
@@ -139,7 +140,7 @@ VOID dllSrvRunner::dllDelHandle(SC_HANDLE& hService)
     CloseServiceHandle(hService);
 }
 
-STATUS dllSrvRunner::dllOpenSCM()
+STATUS SrvUtils::OpenSCM()
 {
     hSCManager = OpenSCManager(NULL, NULL, SC_MANAGER_CREATE_SERVICE);
 
@@ -151,11 +152,11 @@ STATUS dllSrvRunner::dllOpenSCM()
     return STATUS(SUCCESS);
 }
 
-STATUS dllSrvRunner::dllLookup(PWSTR srvName)
+STATUS SrvUtils::Lookup(PWSTR srvName)
 {
     DWORD errCode;
     SC_HANDLE hService;
-    STATUS ret = dllOpenSrv(hService, srvName);
+    STATUS ret = OpenSrv(hService, srvName, SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS);
     if (!ret.Success)
     {
         return ret;
@@ -172,7 +173,7 @@ STATUS dllSrvRunner::dllLookup(PWSTR srvName)
         errCode = GetLastError();
         if (errCode != ERROR_INSUFFICIENT_BUFFER)
         {
-            dllDelHandle(hService);
+            DelHandle(hService);
             return STATUS(errCode, TEXT("获取信息失败，"));
         }
     }
@@ -236,7 +237,7 @@ STATUS dllSrvRunner::dllLookup(PWSTR srvName)
         pSrvDesc = (LPSERVICE_DESCRIPTION)malloc(64 * sizeof(WCHAR));
         pSrvDesc->lpDescription = (LPWSTR)(&pSrvDesc->lpDescription + 1);
         wcscpy_s(pSrvDesc->lpDescription, 63, errMsg);
-        AppendErrInf(pSrvDesc->lpDescription, errCode, TEXT(""));
+        AppendErrInfo(pSrvDesc->lpDescription, errCode, TEXT(""));
     }
 
     if (
@@ -284,7 +285,7 @@ STATUS dllSrvRunner::dllLookup(PWSTR srvName)
         pSrvStatus = (LPSERVICE_STATUS_PROCESS)malloc(sizeof(SERVICE_STATUS_PROCESS));
         pSrvStatus->dwCurrentState = 0;
         pSrvStatus->dwProcessId = 0;
-        AppendErrInf(errMsg, errCode, TEXT(""));
+        AppendErrInfo(errMsg, errCode, TEXT(""));
     }
 
     WCHAR srvConf[MSG_BUF_SIZE];
@@ -427,8 +428,12 @@ STATUS dllSrvRunner::dllLookup(PWSTR srvName)
     return STATUS(SUCCESS, srvConf);
 }
 
-STATUS dllSrvRunner::dllCreate(PWSTR drvPath, PWSTR srvName)
+STATUS SrvUtils::Create(PWSTR drvPath, PWSTR srvName)
 {
+    System::Windows::Forms::MessageBox::Show(
+        (gcnew System::String(drvPath)));
+    return STATUS(SUCCESS);
+
     SC_HANDLE hService;
 
     hService =
@@ -451,7 +456,7 @@ STATUS dllSrvRunner::dllCreate(PWSTR drvPath, PWSTR srvName)
         if (errCode == ERROR_SERVICE_EXISTS)
         {
             wcscpy_s(msg, TEXT("创建服务失败，指定的服务名已被以下服务占用：\r\n"));
-            wcsapp(msg, dllLookup(srvName).Msg);
+            wcsapp(msg, Lookup(srvName).Msg);
             return STATUS(ERROR_NO_MSG, msg);
         }
 
@@ -460,14 +465,14 @@ STATUS dllSrvRunner::dllCreate(PWSTR drvPath, PWSTR srvName)
 
     hSrvMap.insert(std::make_pair(srvName, hService));
 
-    dllDelHandle(hService);
+    DelHandle(hService);
     return STATUS(SUCCESS);
 }
 
-STATUS dllSrvRunner::dllStart(PWSTR srvName)
+STATUS SrvUtils::Start(PWSTR srvName)
 {
     SC_HANDLE hService;
-    STATUS ret = dllOpenSrv(hService, srvName);
+    STATUS ret = OpenSrv(hService, srvName, SERVICE_START);
     if (!ret.Success)
     {
         return ret;
@@ -475,18 +480,18 @@ STATUS dllSrvRunner::dllStart(PWSTR srvName)
 
     if (!StartService(hService, NULL, NULL))
     {
-        dllDelHandle(hService);
+        DelHandle(hService);
         return STATUS(GetLastError(), TEXT("启动失败，"));
     }
 
-    dllDelHandle(hService);
+    DelHandle(hService);
     return STATUS(SUCCESS);
 }
 
-STATUS dllSrvRunner::dllStop(PWSTR srvName)
+STATUS SrvUtils::Stop(PWSTR srvName)
 {
     SC_HANDLE hService;
-    STATUS ret = dllOpenSrv(hService, srvName);
+    STATUS ret = OpenSrv(hService, srvName, SERVICE_STOP);
     if (!ret.Success)
     {
         return ret;
@@ -496,18 +501,18 @@ STATUS dllSrvRunner::dllStop(PWSTR srvName)
 
     if (!ControlService(hService, SERVICE_CONTROL_STOP, &srvStatus))
     {
-        dllDelHandle(hService);
+        DelHandle(hService);
         return STATUS(GetLastError(), TEXT("停止失败，"));
     }
 
-    dllDelHandle(hService);
+    DelHandle(hService);
     return STATUS(SUCCESS);
 }
 
-STATUS dllSrvRunner::dllDelete(PWSTR srvName, BOOL force)
+STATUS SrvUtils::Delete(PWSTR srvName, BOOL force)
 {
     SC_HANDLE hService;
-    STATUS ret = dllOpenSrv(hService, srvName);
+    STATUS ret = OpenSrv(hService, srvName, DELETE);
     if (!ret.Success)
     {
         return ret;
@@ -520,18 +525,18 @@ STATUS dllSrvRunner::dllDelete(PWSTR srvName, BOOL force)
 
     if (!DeleteService(hService))
     {
-        dllDelHandle(hService);
+        DelHandle(hService);
         return STATUS(GetLastError(), TEXT("删除失败，"));
     }
     if (hSrvMap.find(srvName) != hSrvMap.end())
     {
         hSrvMap.erase(srvName);
     }
-    dllDelHandle(hService);
+    DelHandle(hService);
     return STATUS(SUCCESS);
 }
 
-STATUS dllSrvRunner::dllClear()
+STATUS SrvUtils::Clear()
 {
     SERVICE_STATUS srvStatus = { 0 };
     for (srvIter = hSrvMap.begin(); srvIter != hSrvMap.end(); srvIter++)
