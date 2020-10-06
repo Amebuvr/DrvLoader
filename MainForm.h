@@ -9,7 +9,7 @@
 
 #define THROW(ret)  throw gcnew System::SystemException(gcnew System::String(ret.Msg))
 
-namespace DrvLoaderCLR {
+namespace DrvLoader {
 
     using namespace System;
     using namespace System::ComponentModel;
@@ -114,7 +114,7 @@ namespace DrvLoaderCLR {
             this->btnBrow->TabIndex = 2;
             this->btnBrow->Text = L"ä¯ÀÀ¡­";
             this->btnBrow->UseVisualStyleBackColor = true;
-            this->btnBrow->Click += (gcnew System::EventHandler(this, &MainForm::btnBrow_Click));
+            this->btnBrow->Click += gcnew System::EventHandler(this, &MainForm::btnBrow_Click);
             // 
             // btnInst
             // 
@@ -130,7 +130,7 @@ namespace DrvLoaderCLR {
             this->btnInst->TabIndex = 3;
             this->btnInst->Text = L"°²×°";
             this->btnInst->UseVisualStyleBackColor = true;
-            this->btnInst->Click += (gcnew System::EventHandler(this, &MainForm::btnInst_Click));
+            this->btnInst->Click += gcnew System::EventHandler(this, &MainForm::btnInst_Click);
             // 
             // btnStart
             // 
@@ -146,7 +146,7 @@ namespace DrvLoaderCLR {
             this->btnStart->TabIndex = 4;
             this->btnStart->Text = L"Æô¶¯";
             this->btnStart->UseVisualStyleBackColor = true;
-            this->btnStart->Click += (gcnew System::EventHandler(this, &MainForm::btnStart_Click));
+            this->btnStart->Click += gcnew System::EventHandler(this, &MainForm::btnStart_Click);
             // 
             // btnStop
             // 
@@ -162,7 +162,7 @@ namespace DrvLoaderCLR {
             this->btnStop->TabIndex = 5;
             this->btnStop->Text = L"Í£Ö¹";
             this->btnStop->UseVisualStyleBackColor = true;
-            this->btnStop->Click += (gcnew System::EventHandler(this, &MainForm::btnStop_Click));
+            this->btnStop->Click += gcnew System::EventHandler(this, &MainForm::btnStop_Click);
             // 
             // btnDel
             // 
@@ -178,7 +178,7 @@ namespace DrvLoaderCLR {
             this->btnDel->TabIndex = 6;
             this->btnDel->Text = L"Ð¶ÔØ";
             this->btnDel->UseVisualStyleBackColor = true;
-            this->btnDel->Click += (gcnew System::EventHandler(this, &MainForm::btnDel_Click));
+            this->btnDel->Click += gcnew System::EventHandler(this, &MainForm::btnDel_Click);
             // 
             // lblSrvName
             // 
@@ -201,7 +201,7 @@ namespace DrvLoaderCLR {
             this->txtSrvName->Name = L"txtSrvName";
             this->txtSrvName->Size = System::Drawing::Size(269, 30);
             this->txtSrvName->TabIndex = 8;
-            this->txtSrvName->TextChanged += (gcnew System::EventHandler(this, &MainForm::txtSrvName_TextChanged));
+            this->txtSrvName->TextChanged += gcnew System::EventHandler(this, &MainForm::txtSrvName_TextChanged);
             // 
             // tlpMain
             // 
@@ -247,7 +247,7 @@ namespace DrvLoaderCLR {
             this->txtDrvPath->ReadOnly = true;
             this->txtDrvPath->Size = System::Drawing::Size(512, 30);
             this->txtDrvPath->TabIndex = 1;
-            this->txtDrvPath->TextChanged += (gcnew System::EventHandler(this, &MainForm::txtDrvPath_TextChanged));
+            this->txtDrvPath->TextChanged += gcnew System::EventHandler(this, &MainForm::txtDrvPath_TextChanged);
             // 
             // pnlSrv
             // 
@@ -279,7 +279,7 @@ namespace DrvLoaderCLR {
             this->btnLookup->TabIndex = 9;
             this->btnLookup->Text = L"²éÑ¯";
             this->btnLookup->UseVisualStyleBackColor = true;
-            this->btnLookup->Click += (gcnew System::EventHandler(this, &MainForm::btnLookup_Click));
+            this->btnLookup->Click += gcnew System::EventHandler(this, &MainForm::btnLookup_Click);
             // 
             // pnlLog
             // 
@@ -348,9 +348,9 @@ namespace DrvLoaderCLR {
             this->Name = L"MainForm";
             this->Text = L"DrvLoader";
             this->TopMost = true;
-            this->FormClosing += (gcnew System::Windows::Forms::FormClosingEventHandler(this, &MainForm::MainForm_FormClosing));
-            this->DragDrop += (gcnew System::Windows::Forms::DragEventHandler(this, &MainForm::MainForm_DragDrop));
-            this->DragEnter += (gcnew System::Windows::Forms::DragEventHandler(this, &MainForm::MainForm_DragEnter));
+            this->FormClosing += gcnew System::Windows::Forms::FormClosingEventHandler(this, &MainForm::MainForm_FormClosing);
+            this->DragDrop += gcnew System::Windows::Forms::DragEventHandler(this, &MainForm::MainForm_DragDrop);
+            this->DragEnter += gcnew System::Windows::Forms::DragEventHandler(this, &MainForm::MainForm_DragEnter);
             this->tlpMain->ResumeLayout(false);
             this->tlpMain->PerformLayout();
             this->pnlDrv->ResumeLayout(false);
@@ -369,8 +369,8 @@ namespace DrvLoaderCLR {
     private: binded_str drvPath;
     private: binded_str srvName;
 
-    private: System::Void DisplayException(System::Exception^ ex);
-    private: System::Void DisplayException(System::Exception^ ex, System::String^ ExMsg);
+    private: System::Void DisplayException(STATUS& ex);
+    private: System::Void DisplayException(STATUS& ex, System::String^ ExMsg);
 
     private: System::Void MainForm_FormClosing(System::Object^ sender, System::Windows::Forms::FormClosingEventArgs^ e);
     private: System::Void MainForm_DragDrop(System::Object^ sender, System::Windows::Forms::DragEventArgs^ e);

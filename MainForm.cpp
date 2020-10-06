@@ -9,21 +9,22 @@ using namespace System::Windows::Forms;
 using namespace System::Data;
 using namespace System::Drawing;
 
-using namespace DrvLoaderCLR;
+using namespace DrvLoader;
 
-inline Void MainForm::DisplayException(Exception^ ex)
+inline Void MainForm::DisplayException(STATUS& ex)
 {
     DisplayException(ex, TEXT(""));
 }
 
-inline Void MainForm::DisplayException(Exception^ ex, String^ ExMsg)
+inline Void MainForm::DisplayException(STATUS& ex, String^ log)
 {
+    String^ Message = (gcnew String(ex.Msg));
     MessageBox::Show(
-        ex->Message,
+        Message,
         TEXT("错误"),
         MessageBoxButtons::OK,
         MessageBoxIcon::Error);
-    txtLog->AppendText(ex->Message + ExMsg);
+    txtLog->AppendText(Message + log);
 }
 
 MainForm::MainForm(array<String^>^ args)
@@ -33,14 +34,14 @@ MainForm::MainForm(array<String^>^ args)
     try
     {
         STATUS ret = SrvUtils::OpenSCM();
-        if (!ret.Success)
+        if (!ret.Success())
         {
-            THROW(ret);
+            throw ret;
         }
     }
-    catch (Exception^ ex)
+    catch (STATUS ret)
     {
-        DisplayException(ex);
+        DisplayException(ret);
         System::Environment::Exit(0);
     }
 
@@ -70,16 +71,9 @@ MainForm::~MainForm()
 System::Void MainForm::MainForm_FormClosing(System::Object^ sender, System::Windows::Forms::FormClosingEventArgs^ e)
 {
     txtLog->AppendText("正在结束程序……");
-    try
+    if (chkAutoUnload->Checked)
     {
-        if (chkAutoUnload->Checked)
-        {
-            SrvUtils::Clear();
-        }
-    }
-    catch (Exception^ ex)
-    {
-        DisplayException(ex);
+        SrvUtils::Clear();
     }
 }
 
@@ -116,15 +110,15 @@ System::Void MainForm::btnInst_Click(System::Object^ sender, System::EventArgs^ 
     {
         txtLog->AppendText("正在安装驱动……\r\n");
         STATUS ret = SrvUtils::Create(drvPath, srvName);
-        if (!ret.Success)
+        if (!ret.Success())
         {
-            THROW(ret);
+            throw ret;
         }
         txtLog->AppendText(String::Format("安装成功。服务名：{0}\r\n", srvName));
     }
-    catch (Exception^ ex)
+    catch (STATUS ret)
     {
-        DisplayException(ex, "安装已取消。\r\n");
+        DisplayException(ret);
     }
 }
 
@@ -134,15 +128,15 @@ System::Void MainForm::btnStart_Click(System::Object^ sender, System::EventArgs^
     {
         txtLog->AppendText(String::Format("正在启动服务 {0} ……\r\n", srvName));
         STATUS ret = SrvUtils::Start(srvName);
-        if (!ret.Success)
+        if (!ret.Success())
         {
-            THROW(ret);
+            throw ret;
         }
         txtLog->AppendText(String::Format("服务 {0} 已启动。\r\n", srvName));
     }
-    catch (Exception^ ex)
+    catch (STATUS ret)
     {
-        DisplayException(ex);
+        DisplayException(ret);
     }
 }
 
@@ -152,15 +146,15 @@ System::Void MainForm::btnStop_Click(System::Object^ sender, System::EventArgs^ 
     {
         txtLog->AppendText(String::Format("正在停止服务 {0} ……\r\n", srvName));
         STATUS ret = SrvUtils::Stop(srvName);
-        if (!ret.Success)
+        if (!ret.Success())
         {
-            THROW(ret);
+            throw ret;
         }
         txtLog->AppendText(String::Format("服务 {0} 已停止。\r\n", srvName));
     }
-    catch (Exception^ ex)
+    catch (STATUS ret)
     {
-        DisplayException(ex);
+        DisplayException(ret);
     }
 }
 
@@ -169,48 +163,48 @@ System::Void MainForm::btnDel_Click(System::Object^ sender, System::EventArgs^ e
     try
     {
         txtLog->AppendText(String::Format("正在删除服务 {0} ……\r\n", srvName));
-        STATUS ret = SrvUtils::Delete(srvName, false);
-        if (!ret.Success)
+        STATUS ret = SrvUtils::Delete(srvName);
+        if (!ret.Success())
         {
-            THROW(ret);
-        }
-        txtLog->AppendText(String::Format("服务 {0} 已删除。\r\n", srvName));
-    }
-    catch (Exception^ ex)
-    {
-        if (String::Equals(ex->Message, "删除操作需要确认。"))
-        {
-            System::Windows::Forms::DialogResult dialogResult =
-                MessageBox::Show(
-                    String::Format("指定的服务({0})似乎不是由本程序创建的。确定要删除吗？", srvName),
-                    "提示",
-                    MessageBoxButtons::OKCancel,
-                    MessageBoxIcon::Question);
-            if (dialogResult == System::Windows::Forms::DialogResult::OK)
+            if (ret.exitCode == ERROR_NEED_CONFIRM)
             {
-                try
+                System::Windows::Forms::DialogResult dialogResult =
+                    MessageBox::Show(
+                        String::Format("指定的服务({0})似乎不是由本程序创建的。确定要删除吗？", srvName),
+                        "提示",
+                        MessageBoxButtons::OKCancel,
+                        MessageBoxIcon::Question);
+                if (dialogResult == System::Windows::Forms::DialogResult::OK)
                 {
-                    STATUS ret = SrvUtils::Delete(srvName, true);
-                    if (!ret.Success)
+                    try
                     {
-                        THROW(ret);
+                        STATUS ret = SrvUtils::Delete(srvName, true);
+                        if (!ret.Success())
+                        {
+                            throw ret;
+                        }
+                        txtLog->AppendText(String::Format("服务 {0} 已删除。\r\n", srvName));
                     }
-                    txtLog->AppendText(String::Format("服务 {0} 已删除。\r\n", srvName));
+                    catch (STATUS ret)
+                    {
+                        DisplayException(ret);
+                    }
                 }
-                catch (Exception^ exce)
+                else
                 {
-                    DisplayException(exce);
+                    txtLog->AppendText("删除取消。\r\n");
                 }
             }
             else
             {
-                txtLog->AppendText("删除取消。\r\n");
+                throw ret;
             }
         }
-        else
-        {
-            DisplayException(ex);
-        }
+        txtLog->AppendText(String::Format("服务 {0} 已删除。\r\n", srvName));
+    }
+    catch (STATUS ret)
+    {
+        DisplayException(ret);
     }
 }
 
@@ -238,17 +232,17 @@ System::Void MainForm::btnLookup_Click(System::Object^ sender, System::EventArgs
     {
         txtLog->AppendText("正在查询……\r\n");
         STATUS ret = SrvUtils::Lookup(srvName);
-        if (!ret.Success)
+        if (!ret.Success())
         {
-            THROW(ret);
+            throw ret;
         }
         else
         {
             txtLog->AppendText(gcnew String(ret.Msg));
         }
     }
-    catch (Exception^ ex)
+    catch (STATUS ret)
     {
-        DisplayException(ex);
+        DisplayException(ret);
     }
 }

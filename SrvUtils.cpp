@@ -1,19 +1,20 @@
 #include "SrvUtils.h"
 
-using namespace DrvLoaderCLR;
+using namespace DrvLoader;
 
 std::unordered_map<DWORD, PCWSTR>               SrvUtils::expected_err = {
-{ERROR_PATH_NOT_FOUND,            TEXT("找不到服务二进制文件。")},
-{ERROR_ACCESS_DENIED,             TEXT("拒绝访问。")},
-{ERROR_INVALID_NAME,              TEXT("指定的服务名无效。")},
-{ERROR_BAD_EXE_FORMAT,            TEXT("指定的二进制文件无效。")},
-{ERROR_SERVICE_ALREADY_RUNNING,   TEXT("服务的实例已在运行。")},
-{ERROR_SERVICE_DISABLED,          TEXT("服务已被禁用。")},
-{ERROR_SERVICE_DOES_NOT_EXIST,    TEXT("指定的服务不存在。")},
-{ERROR_SERVICE_CANNOT_ACCEPT_CTRL,TEXT("服务无法在此时接受控制信息。服务可能已停止/正在停止/正在启动。")},
-{ERROR_SERVICE_NOT_ACTIVE,        TEXT("服务尚未启动。")},
-{ERROR_SERVICE_MARKED_FOR_DELETE, TEXT("服务已标记为删除。")},
-{ERROR_NO_MSG,                    TEXT("")} };
+{ERROR_PATH_NOT_FOUND,              TEXT("找不到服务二进制文件。")},
+{ERROR_ACCESS_DENIED,               TEXT("拒绝访问。")},
+{ERROR_INVALID_NAME,                TEXT("指定的服务名无效。")},
+{ERROR_BAD_EXE_FORMAT,              TEXT("指定的二进制文件无效。")},
+{ERROR_DEPENDENT_SERVICES_RUNNING,  TEXT("有依赖于此服务的组件正在运行。")},
+{ERROR_SERVICE_ALREADY_RUNNING,     TEXT("服务的实例已在运行。")},
+{ERROR_SERVICE_DISABLED,            TEXT("服务已被禁用。")},
+{ERROR_SERVICE_DOES_NOT_EXIST,      TEXT("指定的服务不存在。")},
+{ERROR_SERVICE_CANNOT_ACCEPT_CTRL,  TEXT("服务无法在此时接受控制信息。服务可能已停止/正在停止/正在启动。")},
+{ERROR_SERVICE_NOT_ACTIVE,          TEXT("服务尚未启动。")},
+{ERROR_SERVICE_MARKED_FOR_DELETE,   TEXT("服务已标记为删除。")},
+{ERROR_NO_MSG,                      TEXT("")} };
 std::unordered_map<DWORD, PCWSTR>::iterator     SrvUtils::errIter;
 std::unordered_map<PWSTR, SC_HANDLE>            SrvUtils::hSrvMap;
 std::unordered_map<PWSTR, SC_HANDLE>::iterator  SrvUtils::srvIter;
@@ -82,7 +83,7 @@ inline void wcsapp(PWSTR(&_Destination), size_t _SizeInWords, PWSTR _Source)
 
 #pragma endregion
 
-inline void DrvLoaderCLR::AppendErrInfo(PWSTR msg, DWORD errCode, PWSTR end = TEXT("\r\n"))
+inline void DrvLoader::AppendErrInfo(PWSTR msg, DWORD errCode, PWSTR end = TEXT("\r\n"))
 {
     SrvUtils::errIter = SrvUtils::expected_err.find(errCode);
     if (SrvUtils::errIter != SrvUtils::expected_err.end())
@@ -100,14 +101,10 @@ inline void DrvLoaderCLR::AppendErrInfo(PWSTR msg, DWORD errCode, PWSTR end = TE
 
 STATUS::STATUS(DWORD exitCode, OPTIONAL PCWSTR msg = TEXT(""))
 {
+    this->exitCode = exitCode;
     wcscpy_s(this->Msg, msg);
-    if (exitCode == SUCCESS)
+    if (!this->Success())
     {
-        this->Success = TRUE;
-    }
-    else
-    {
-        this->Success = FALSE;
         AppendErrInfo(this->Msg, exitCode);
     }
 }
@@ -157,7 +154,7 @@ STATUS SrvUtils::Lookup(PWSTR srvName)
     DWORD errCode;
     SC_HANDLE hService;
     STATUS ret = OpenSrv(hService, srvName, SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS);
-    if (!ret.Success)
+    if (!ret.Success())
     {
         return ret;
     }
@@ -395,7 +392,8 @@ STATUS SrvUtils::Lookup(PWSTR srvName)
         }
     }
 
-    swprintf_s(srvConf,
+    swprintf_s(
+        srvConf,
         L"服务名称：%ls\r\n"
         L"显示名称：%ls\r\n"
         L"类型：%hs\r\n"
@@ -430,10 +428,6 @@ STATUS SrvUtils::Lookup(PWSTR srvName)
 
 STATUS SrvUtils::Create(PWSTR drvPath, PWSTR srvName)
 {
-    System::Windows::Forms::MessageBox::Show(
-        (gcnew System::String(drvPath)));
-    return STATUS(SUCCESS);
-
     SC_HANDLE hService;
 
     hService =
@@ -473,7 +467,7 @@ STATUS SrvUtils::Start(PWSTR srvName)
 {
     SC_HANDLE hService;
     STATUS ret = OpenSrv(hService, srvName, SERVICE_START);
-    if (!ret.Success)
+    if (!ret.Success())
     {
         return ret;
     }
@@ -488,11 +482,11 @@ STATUS SrvUtils::Start(PWSTR srvName)
     return STATUS(SUCCESS);
 }
 
-STATUS SrvUtils::Stop(PWSTR srvName)
+STATUS SrvUtils::Stop(PWSTR srvName, OPTIONAL BOOL force)
 {
     SC_HANDLE hService;
     STATUS ret = OpenSrv(hService, srvName, SERVICE_STOP);
-    if (!ret.Success)
+    if (!ret.Success())
     {
         return ret;
     }
@@ -509,18 +503,18 @@ STATUS SrvUtils::Stop(PWSTR srvName)
     return STATUS(SUCCESS);
 }
 
-STATUS SrvUtils::Delete(PWSTR srvName, BOOL force)
+STATUS SrvUtils::Delete(PWSTR srvName, OPTIONAL BOOL force)
 {
     SC_HANDLE hService;
     STATUS ret = OpenSrv(hService, srvName, DELETE);
-    if (!ret.Success)
+    if (!ret.Success())
     {
         return ret;
     }
 
     if (!force && hSrvMap.find(srvName) == hSrvMap.end())
     {
-        return STATUS(ERROR_NO_MSG, TEXT("删除操作需要确认。"));
+        return STATUS(ERROR_NEED_CONFIRM, TEXT("删除操作需要确认。"));
     }
 
     if (!DeleteService(hService))

@@ -1,6 +1,6 @@
 #include "binded_str.h"
 
-using namespace DrvLoaderCLR;
+using namespace DrvLoader;
 
 binded_str::~binded_str()
 {

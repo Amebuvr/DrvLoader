@@ -15,6 +15,7 @@
 #define SUCCESS                                0L
 #define ERROR_UNKNOWN                      99999L
 #define ERROR_NO_MSG                       10001L
+#define ERROR_NEED_CONFIRM                 10002L 
 
 /*
 * * Already defined in winerror.h
@@ -34,15 +35,17 @@
 
 #define MSG_BUF_SIZE (size_t)1024
 
-namespace DrvLoaderCLR
+namespace DrvLoader
 {
     inline void AppendErrInfo(PWSTR msg, DWORD errCode, PWSTR end);
 
     struct STATUS
     {
-        STATUS(DWORD exitCode, OPTIONAL PCWSTR msg);
-        BOOL Success = TRUE;
+        DWORD exitCode;
         WCHAR Msg[MSG_BUF_SIZE] = TEXT("");
+
+        STATUS(DWORD exitCode, OPTIONAL PCWSTR msg);
+        BOOL Success() { return exitCode == SUCCESS; }
     };
 
     class SrvUtils
@@ -52,8 +55,8 @@ namespace DrvLoaderCLR
         static STATUS Lookup(PWSTR srvName);
         static STATUS Create(PWSTR drvPath, PWSTR srvName);
         static STATUS Start(PWSTR srvName);
-        static STATUS Stop(PWSTR srvName);
-        static STATUS Delete(PWSTR srvName, BOOL force);
+        static STATUS Stop(PWSTR srvName, OPTIONAL BOOL force = FALSE);
+        static STATUS Delete(PWSTR srvName, OPTIONAL BOOL force = FALSE);
         static STATUS Clear();
 
     private:

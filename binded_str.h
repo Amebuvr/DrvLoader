@@ -2,7 +2,7 @@
 #include "windows.h"
 #include "vcclr.h"
 
-namespace DrvLoaderCLR
+namespace DrvLoader
 {
     using namespace System;
 
