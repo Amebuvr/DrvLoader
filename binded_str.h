@@ -9,6 +9,8 @@ namespace DrvLoader
     ref class binded_str
     {
         PWSTR data;
+        String^ data_str;
+
     public:
         binded_str()
         {
@@ -16,11 +18,12 @@ namespace DrvLoader
         };
         ~binded_str();
 
-        operator String ^ () { return (gcnew String(data)); }
+        operator String ^ () { return data_str; }
         operator PWSTR() { return data; }
 
         binded_str^ operator=(String^ source)
         {
+            data_str = source;
             this->~binded_str();
             pin_ptr<const WCHAR> s = PtrToStringChars(source);
             size_t len = wcslen(s) + 1;
@@ -47,5 +50,4 @@ namespace DrvLoader
             }
         }
     };
-}
-
+} // namespace DrvLoader

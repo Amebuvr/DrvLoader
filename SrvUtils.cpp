@@ -107,6 +107,9 @@ STATUS::STATUS(DWORD exitCode, OPTIONAL PCWSTR msg = TEXT(""))
     {
         AppendErrInfo(this->Msg, exitCode);
     }
+    DebugLog("--------------------------------------------------------------\n");
+    DebugLog("STATUS constructed. Location: 0x%p\n", this);
+    DebugLog("--------------------------------------------------------------\n");
 }
 
 STATUS SrvUtils::OpenSrv(SC_HANDLE& hService, PWSTR srvName, OPTIONAL ULONG Access = SERVICE_ALL_ACCESS)

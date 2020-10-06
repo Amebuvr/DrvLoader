@@ -1,22 +1,16 @@
 #pragma once
-#pragma warning(disable:4251)
+#pragma warning(disable : 4251)
 
 #include "windows.h"
 #include "stdio.h"
+#include "wchar.h"
 #include "string.h"
 #include "unordered_map"
-//#include "minwindef.h"
-//#include "errhandlingapi.h"
-//#include "winerror.h"
-//#include "winsvc.h"
-//#include "winnt.h"
-
 
 #define SUCCESS                                0L
 #define ERROR_UNKNOWN                      99999L
 #define ERROR_NO_MSG                       10001L
-#define ERROR_NEED_CONFIRM                 10002L 
-
+#define ERROR_NEED_CONFIRM                 10002L
 /*
 * * Already defined in winerror.h
 **
@@ -33,6 +27,21 @@
 #define ERROR_SERVICE_EXISTS                1073L
 */
 
+#define __CONCAT(x, y) x##y
+#define CONCAT(x, y) __CONCAT(x, y)
+
+#ifdef _DEBUG
+#define DebugLog(msg, ...)                                              \
+    do                                                                  \
+    {                                                                   \
+        WCHAR CONCAT(__msg_, __LINE__)[MSG_BUF_SIZE];                   \
+        swprintf_s(CONCAT(__msg_, __LINE__), TEXT(msg), ##__VA_ARGS__); \
+        OutputDebugString(CONCAT(__msg_, __LINE__));                    \
+    } while (0)
+#else
+#define DebugLog
+#endif
+
 #define MSG_BUF_SIZE (size_t)1024
 
 namespace DrvLoader
@@ -45,6 +54,12 @@ namespace DrvLoader
         WCHAR Msg[MSG_BUF_SIZE] = TEXT("");
 
         STATUS(DWORD exitCode, OPTIONAL PCWSTR msg);
+        ~STATUS()
+        {
+            DebugLog("--------------------------------------------------------------\n");
+            DebugLog("STATUS destructed. Location: 0x%p\n", this);
+            DebugLog("--------------------------------------------------------------\n");
+        }
         BOOL Success() { return exitCode == SUCCESS; }
     };
 
@@ -60,16 +75,15 @@ namespace DrvLoader
         static STATUS Clear();
 
     private:
-        static STATUS   OpenSrv(SC_HANDLE& phService, PWSTR srvName, OPTIONAL ULONG Access);
-        static VOID     DelHandle(SC_HANDLE& hService);
+        static STATUS OpenSrv(SC_HANDLE& phService, PWSTR srvName, OPTIONAL ULONG Access);
+        static VOID DelHandle(SC_HANDLE& hService);
 
-        static SC_HANDLE                                        hSCManager;
-        static std::unordered_map<PWSTR, SC_HANDLE>             hSrvMap;
-        static std::unordered_map<PWSTR, SC_HANDLE>::iterator   srvIter;
-        static std::unordered_map<DWORD, PCWSTR>                expected_err;
-        static std::unordered_map<DWORD, PCWSTR>::iterator      errIter;
+        static SC_HANDLE hSCManager;
+        static std::unordered_map<PWSTR, SC_HANDLE> hSrvMap;
+        static std::unordered_map<PWSTR, SC_HANDLE>::iterator srvIter;
+        static std::unordered_map<DWORD, PCWSTR> expected_err;
+        static std::unordered_map<DWORD, PCWSTR>::iterator errIter;
 
         friend inline void AppendErrInfo(PWSTR msg, DWORD errCode, PWSTR end);
     };
-}
-
+} // namespace DrvLoader

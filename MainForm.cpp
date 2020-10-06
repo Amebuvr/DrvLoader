@@ -11,20 +11,14 @@ using namespace System::Drawing;
 
 using namespace DrvLoader;
 
-inline Void MainForm::DisplayException(STATUS& ex)
+inline Void MainForm::DisplayException(RSTATUS^ ex)
 {
-    DisplayException(ex, TEXT(""));
-}
-
-inline Void MainForm::DisplayException(STATUS& ex, String^ log)
-{
-    String^ Message = (gcnew String(ex.Msg));
     MessageBox::Show(
-        Message,
+        ex,
         TEXT("错误"),
         MessageBoxButtons::OK,
         MessageBoxIcon::Error);
-    txtLog->AppendText(Message + log);
+    Log(ex);
 }
 
 MainForm::MainForm(array<String^>^ args)
@@ -33,30 +27,25 @@ MainForm::MainForm(array<String^>^ args)
 
     try
     {
-        STATUS ret = SrvUtils::OpenSCM();
-        if (!ret.Success())
-        {
-            throw ret;
-        }
-    }
-    catch (STATUS ret)
-    {
-        DisplayException(ret);
-        System::Environment::Exit(0);
-    }
+        ThrowIfFailed(SrvUtils::OpenSCM());
+    } CatchDisplay(
+        delete ret; \
+        ret = nullptr; \
+        // 防止内存泄露
+        System::Environment::Exit(0););
 
     ActiveControl = txtSrvName;
 
-    txtLog->AppendText("欢迎使用DrvLoader");
+    Log("欢迎使用DrvLoader");
 
     if (args->Length > 0)
     {
         txtDrvPath->Text = args[0];
-        txtLog->AppendText("。\r\n");
+        Log("。\r\n");
     }
     else
     {
-        txtLog->AppendText("，请选择驱动程序文件/输入服务名。\r\n");
+        Log("，请选择驱动程序文件/输入服务名。\r\n");
     }
 }
 
@@ -70,7 +59,7 @@ MainForm::~MainForm()
 
 System::Void MainForm::MainForm_FormClosing(System::Object^ sender, System::Windows::Forms::FormClosingEventArgs^ e)
 {
-    txtLog->AppendText("正在结束程序……");
+    Log("正在结束程序……");
     if (chkAutoUnload->Checked)
     {
         SrvUtils::Clear();
@@ -108,104 +97,73 @@ System::Void MainForm::btnInst_Click(System::Object^ sender, System::EventArgs^ 
 {
     try
     {
-        txtLog->AppendText("正在安装驱动……\r\n");
-        STATUS ret = SrvUtils::Create(drvPath, srvName);
-        if (!ret.Success())
-        {
-            throw ret;
-        }
-        txtLog->AppendText(String::Format("安装成功。服务名：{0}\r\n", srvName));
-    }
-    catch (STATUS ret)
-    {
-        DisplayException(ret);
-    }
+        Log("正在安装驱动……\r\n");
+        ThrowIfFailed(SrvUtils::Create(drvPath, srvName));
+        Log("安装成功。服务名：{0}\r\n", srvName);
+    } CatchDisplay();
 }
 
 System::Void MainForm::btnStart_Click(System::Object^ sender, System::EventArgs^ e)
 {
     try
     {
-        txtLog->AppendText(String::Format("正在启动服务 {0} ……\r\n", srvName));
-        STATUS ret = SrvUtils::Start(srvName);
-        if (!ret.Success())
-        {
-            throw ret;
-        }
-        txtLog->AppendText(String::Format("服务 {0} 已启动。\r\n", srvName));
-    }
-    catch (STATUS ret)
-    {
-        DisplayException(ret);
-    }
+        Log("正在启动服务 {0} ……\r\n", srvName);
+        ThrowIfFailed(SrvUtils::Start(srvName));
+        Log("服务 {0} 已启动。\r\n", srvName);
+    } CatchDisplay();
 }
 
 System::Void MainForm::btnStop_Click(System::Object^ sender, System::EventArgs^ e)
 {
     try
     {
-        txtLog->AppendText(String::Format("正在停止服务 {0} ……\r\n", srvName));
-        STATUS ret = SrvUtils::Stop(srvName);
-        if (!ret.Success())
-        {
-            throw ret;
-        }
-        txtLog->AppendText(String::Format("服务 {0} 已停止。\r\n", srvName));
-    }
-    catch (STATUS ret)
-    {
-        DisplayException(ret);
-    }
+        Log("正在停止服务 {0} ……\r\n", srvName);
+        ThrowIfFailed(SrvUtils::Stop(srvName));
+        Log("服务 {0} 已停止。\r\n", srvName);
+    } CatchDisplay();
 }
 
 System::Void MainForm::btnDel_Click(System::Object^ sender, System::EventArgs^ e)
 {
     try
     {
-        txtLog->AppendText(String::Format("正在删除服务 {0} ……\r\n", srvName));
-        STATUS ret = SrvUtils::Delete(srvName);
-        if (!ret.Success())
+        Log("正在删除服务 {0} ……\r\n", srvName);
+        RSTATUS^ ret = (gcnew RSTATUS(SrvUtils::Delete(srvName)));
+        switch (ret->ExitCode)
         {
-            if (ret.exitCode == ERROR_NEED_CONFIRM)
+        case SUCCESS:
+            Log("服务 {0} 已删除。\r\n", srvName);
+            break;
+        case ERROR_NEED_CONFIRM:
+        {
+            System::Windows::Forms::DialogResult dialogResult =
+                MessageBox::Show(
+                    String::Format("指定的服务({0})似乎不是由本程序创建的。确定要删除吗？", srvName),
+                    "提示",
+                    MessageBoxButtons::OKCancel,
+                    MessageBoxIcon::Question);
+            if (dialogResult == System::Windows::Forms::DialogResult::OK)
             {
-                System::Windows::Forms::DialogResult dialogResult =
-                    MessageBox::Show(
-                        String::Format("指定的服务({0})似乎不是由本程序创建的。确定要删除吗？", srvName),
-                        "提示",
-                        MessageBoxButtons::OKCancel,
-                        MessageBoxIcon::Question);
-                if (dialogResult == System::Windows::Forms::DialogResult::OK)
+                try
                 {
-                    try
-                    {
-                        STATUS ret = SrvUtils::Delete(srvName, true);
-                        if (!ret.Success())
-                        {
-                            throw ret;
-                        }
-                        txtLog->AppendText(String::Format("服务 {0} 已删除。\r\n", srvName));
-                    }
-                    catch (STATUS ret)
-                    {
-                        DisplayException(ret);
-                    }
-                }
-                else
-                {
-                    txtLog->AppendText("删除取消。\r\n");
-                }
+                    ThrowIfFailed(SrvUtils::Delete(srvName, true));
+                    Log("服务 {0} 已删除。\r\n", srvName);
+                    break;
+                } CatchDisplay();
             }
             else
             {
-                throw ret;
+                Log("删除取消。\r\n");
+                break;
             }
         }
-        txtLog->AppendText(String::Format("服务 {0} 已删除。\r\n", srvName));
-    }
-    catch (STATUS ret)
-    {
-        DisplayException(ret);
-    }
+        default:
+            throw ret;
+            break;
+        }
+        delete ret;
+        ret = nullptr;
+    } CatchDisplay();
 }
 
 System::Void MainForm::txtSrvName_TextChanged(System::Object^ sender, System::EventArgs^ e)
@@ -214,6 +172,7 @@ System::Void MainForm::txtSrvName_TextChanged(System::Object^ sender, System::Ev
     btnInst->Enabled = drvPath.Length != 0 && srvName.Length != 0;
     // 我也不知道为什么不可以连续赋值
     // 可能是因为编译器把属性的set当做函数调用
+    // 而set没有返回值
     btnLookup->Enabled = srvName.Length != 0;
     btnStart->Enabled = srvName.Length != 0;
     btnStop->Enabled = srvName.Length != 0;
@@ -230,19 +189,17 @@ System::Void MainForm::btnLookup_Click(System::Object^ sender, System::EventArgs
 {
     try
     {
-        txtLog->AppendText("正在查询……\r\n");
-        STATUS ret = SrvUtils::Lookup(srvName);
-        if (!ret.Success())
+        Log("正在查询……\r\n");
+        RSTATUS^ ret = (gcnew RSTATUS(SrvUtils::Lookup(srvName)));
+        if (!ret->Success)
         {
             throw ret;
         }
         else
         {
-            txtLog->AppendText(gcnew String(ret.Msg));
+            Log(ret);
+            delete ret;
+            ret = nullptr;
         }
-    }
-    catch (STATUS ret)
-    {
-        DisplayException(ret);
-    }
+    } CatchDisplay();
 }
